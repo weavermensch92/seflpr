@@ -73,3 +73,6 @@ langchain
 langchain-openai
 langchain-anthropic
 langchain-community
+# OCR 관련 (추가)
+paddleocr
+paddlepaddle
