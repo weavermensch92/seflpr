@@ -74,7 +74,7 @@ async def parse_link(
     db: AsyncSession = Depends(get_db),
 ):
     """링크 URL → 텍스트 추출 → AI 파싱."""
-    return await ProfileService(db).parse_url(body.url)
+    return await ProfileService(db).parse_url(user_id, body.url)
 
 
 @router.post("/parse/file/extract")
