@@ -30,8 +30,13 @@ export default function ParsedPreviewTable({ items, onItemsChange, onConfirm, on
 
   const removeItem = (i: number) => {
     onItemsChange(items.filter((_, idx) => idx !== i));
-    const next = new Set(selected);
-    next.delete(i);
+    
+    // 선택된 인덱스들 다시 계산 (i보다 큰 인덱스는 1씩 줄임)
+    const next = new Set<number>();
+    selected.forEach(idx => {
+      if (idx < i) next.add(idx);
+      else if (idx > i) next.add(idx - 1);
+    });
     setSelected(next);
   };
 
