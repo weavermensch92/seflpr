@@ -10,23 +10,29 @@ from app.core.config import settings
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def _load_key(path: str) -> str:
-    key_path = Path(path)
-    if not key_path.exists():
-        raise FileNotFoundError(
-            f"JWT key not found at {path}. "
-            "Run: mkdir -p keys && openssl genrsa -out keys/private.pem 2048 "
-            "&& openssl rsa -in keys/private.pem -pubout -out keys/public.pem"
-        )
-    return key_path.read_text()
+def _load_key(env_var: str, file_path: str) -> str:
+    # 1. 환경 변수에서 먼저 확인 (Render 등 운영 환경용)
+    env_content = os.getenv(env_var)
+    if env_content:
+        return env_content.replace("\\n", "\n")
+
+    # 2. 파일에서 확인 (로컬 개발 환경용)
+    path = Path(file_path)
+    if path.exists():
+        return path.read_text()
+    
+    raise FileNotFoundError(
+        f"JWT key not found in env var '{env_var}' or file '{file_path}'. "
+        "For local: mkdir -p keys && openssl genrsa -out keys/private.pem 2048"
+    )
 
 
 def get_private_key() -> str:
-    return _load_key(settings.JWT_PRIVATE_KEY_PATH)
+    return _load_key("JWT_PRIVATE_KEY", settings.JWT_PRIVATE_KEY_PATH)
 
 
 def get_public_key() -> str:
-    return _load_key(settings.JWT_PUBLIC_KEY_PATH)
+    return _load_key("JWT_PUBLIC_KEY", settings.JWT_PUBLIC_KEY_PATH)
 
 
 def hash_password(password: str) -> str:
