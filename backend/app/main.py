@@ -17,7 +17,11 @@ app = FastAPI(
     version="0.1.0",
     docs_url="/docs" if not settings.is_production else None,
     redoc_url="/redoc" if not settings.is_production else None,
+    openapi_url="/openapi.json" if not settings.is_production else None,
 )
+
+# Trailing slash 문제 해결 (v1_router에도 적용)
+v1_router.redirect_slashes = True
 
 # Rate limiting
 app.state.limiter = limiter
@@ -33,7 +37,7 @@ app.add_middleware(
 )
 
 # 라우터 등록
-app.include_router(v1_router)
+app.include_router(v1_router, prefix="/api/v1")
 
 
 @app.get("/health")

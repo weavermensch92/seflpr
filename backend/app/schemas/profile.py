@@ -11,8 +11,8 @@ class ProfileCreate(BaseModel):
     organization: Optional[str] = None
     role: Optional[str] = None
     description: Optional[str] = None  # 평문 → 서비스에서 암호화
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
+    start_date: Optional[date | str] = None
+    end_date: Optional[date | str] = None
     tags: Optional[list[str]] = None
     metadata_: Optional[dict[str, Any]] = Field(default=None, alias="metadata")
     sort_order: int = 0
@@ -26,8 +26,8 @@ class ProfileUpdate(BaseModel):
     organization: Optional[str] = None
     role: Optional[str] = None
     description: Optional[str] = None
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
+    start_date: Optional[date | str] = None
+    end_date: Optional[date | str] = None
     tags: Optional[list[str]] = None
     metadata_: Optional[dict[str, Any]] = Field(default=None, alias="metadata")
     sort_order: Optional[int] = None
