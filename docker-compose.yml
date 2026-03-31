@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: selfpr-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-selfpr}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: selfpr-backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-selfpr}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRE_MINUTES: 1440
+      DEBUG: "true"
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "alembic upgrade head && 
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: selfpr-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    # 컨테이너 빌드 시 API 주소를 주입 (프론트엔드가 백엔드로 요청 보낼 주소)
+    environment:
+      VITE_API_BASE_URL: "http://localhost:8000/api/v1"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

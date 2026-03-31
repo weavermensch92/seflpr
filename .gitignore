@@ -1,0 +1,40 @@
+# Environment
+.env
+.env.local
+*.env
+
+# Keys
+keys/
+*.pem
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+.next/
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Docker volumes (local)
+postgres_data/
+redis_data/
+
+# Uploads (원본 파일은 처리 후 삭제되므로 추적 불필요)
+uploads/
+
+# OS
+.DS_Store
+Thumbs.db
