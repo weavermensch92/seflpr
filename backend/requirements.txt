@@ -61,3 +61,9 @@ uvloop==0.22.1
 watchfiles==1.1.1
 websockets==16.0
 wrapt==2.1.2
+# 추가 필수 라이브러리
+Pillow==10.2.0
+python-docx==1.1.0
+PyMuPDF==1.23.22
+openpyxl==3.1.2
+python-magic==0.4.27
