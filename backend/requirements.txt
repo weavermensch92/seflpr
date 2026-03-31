@@ -61,9 +61,15 @@ uvloop==0.22.1
 watchfiles==1.1.1
 websockets==16.0
 wrapt==2.1.2
-# 추가 필수 라이브러리
+# 추가 필수 라이브러리 (파일 처리)
 Pillow==10.2.0
 python-docx==1.1.0
 PyMuPDF==1.23.22
 openpyxl==3.1.2
 python-magic==0.4.27
+beautifulsoup4==4.12.3
+# AI 관련 필수 라이브러리
+langchain==0.1.12
+langchain-openai==0.1.0
+langchain-anthropic==0.1.4
+langchain-community==0.0.28
