@@ -11,19 +11,26 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def _load_key(env_var: str, file_path: str) -> str:
-    # 1. 환경 변수에서 먼저 확인 (Render 등 운영 환경용)
+    # 1. 환경 변수에서 먼저 확인
     env_content = os.getenv(env_var)
-    if env_content:
+    if env_content and "-----BEGIN" in env_content:
         return env_content.replace("\\n", "\n")
 
-    # 2. 파일에서 확인 (로컬 개발 환경용)
+    # 2. 만약 file_path 변수 자체에 키 내용이 들어왔을 경우를 대비 (방어 코드)
+    if file_path and "-----BEGIN" in file_path:
+        return file_path.replace("\\n", "\n")
+
+    # 3. 파일에서 확인
     path = Path(file_path)
-    if path.exists():
-        return path.read_text()
+    try:
+        if path.exists() and path.is_file():
+            return path.read_text()
+    except Exception:
+        pass
     
     raise FileNotFoundError(
-        f"JWT key not found in env var '{env_var}' or file '{file_path}'. "
-        "For local: mkdir -p keys && openssl genrsa -out keys/private.pem 2048"
+        f"JWT key not found in env var '{env_var}' or file path. "
+        "Please check your Render Environment Variables."
     )
 
 
