@@ -13,12 +13,15 @@ class PointService:
         self.db = db
 
     async def get_balance(self, user_id: uuid.UUID) -> int:
-        query = select(User.point_balance).where(User.id == user_id)
+        query = select(User).where(User.id == user_id)
         result = await self.db.execute(query)
-        balance = result.scalar_one_or_none()
-        if balance is None:
+        user = result.scalar_one_or_none()
+        if user is None:
             raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
-        return balance
+        # 어드민은 9,999,999P로 표시 (무제한 시각화)
+        if user.is_admin:
+            return 9999999
+        return user.point_balance
 
     async def deduct_points(
         self, 
@@ -41,6 +44,10 @@ class PointService:
 
         if not user:
             raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+
+        # 어드민은 무제한 이용 가능 (체크 및 차감 생략)
+        if user.is_admin:
+            return user.point_balance
 
         if user.point_balance < amount:
             raise HTTPException(

@@ -30,7 +30,7 @@ class AuthService:
                 email=user.email,
                 full_name=user.full_name,
                 is_admin=user.is_admin,
-                point_balance=user.point_balance,
+                point_balance=9999999 if user.is_admin else user.point_balance,
             ),
             access_token=access_token,
         )
@@ -58,7 +58,7 @@ class AuthService:
                 email=user.email,
                 full_name=user.full_name,
                 is_admin=user.is_admin,
-                point_balance=user.point_balance,
+                point_balance=9999999 if user.is_admin else user.point_balance,
             ),
         }
 
