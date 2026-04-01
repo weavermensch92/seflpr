@@ -67,3 +67,11 @@ class PersonalProfile(Base):
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="profiles")
+
+    @property
+    def description(self) -> str | None:
+        return getattr(self, "_description_plain", None)
+
+    @property
+    def ai_interpreted_content(self) -> str | None:
+        return getattr(self, "_ai_interpreted_content_plain", None)
