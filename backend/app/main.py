@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -57,11 +58,23 @@ async def health_check():
     return {"status": "ok", "env": settings.APP_ENV}
 
 
+# 로깅 설정
+logger = logging.getLogger("app")
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    # 에러 내용을 서버 로그에 상세히 기록 (가장 중요!)
+    logger.error(f"Internal Server Error: {exc}", exc_info=True)
+    
     if settings.is_production:
-        return JSONResponse(
+        response = JSONResponse(
             status_code=500,
             content={"detail": "Internal server error"},
         )
+        # CORS 헤더 수동 추가 (미들웨어가 익셉션 핸들러의 응답은 건너뛰는 경우가 있음)
+        origin = request.headers.get("Origin")
+        if origin and origin in settings.CORS_ORIGINS:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+        return response
     raise exc
