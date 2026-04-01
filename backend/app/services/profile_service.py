@@ -90,15 +90,20 @@ class ProfileService:
         from sqlalchemy import select
         
         u_id = uuid.UUID(user_id)
-        query = select(User.point_balance).where(User.id == u_id)
+        query = select(User).where(User.id == u_id)
         result = await self.db.execute(query)
-        balance = result.scalar_one_or_none()
+        user = result.scalar_one_or_none()
         
-        if balance is None or balance <= 0:
-            raise HTTPException(
-                status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail="AI 자동 분류는 포인트 충전 후 사용 가능합니다."
-            )
+        if not user:
+             raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+
+        # 어드민은 포인트 체크 생략
+        if not user.is_admin:
+            if user.point_balance <= 0:
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail="AI 자동 분류는 포인트 충전 후 사용 가능합니다."
+                )
 
         from app.core.config import settings
 
