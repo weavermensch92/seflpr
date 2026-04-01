@@ -97,6 +97,16 @@ export const profilesApi = {
       .then((r) => r.data);
   },
 
+  interpretFileToMemory: (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return apiClient
+      .post<Profile>("/profiles/parse/file/memory", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((r) => r.data);
+  },
+
   // 로컬 데이터를 서버로 일괄 동기화
   syncLocalProfiles: (items: ProfileCreatePayload[]) =>
     apiClient

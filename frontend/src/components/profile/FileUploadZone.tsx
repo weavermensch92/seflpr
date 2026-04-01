@@ -19,6 +19,7 @@ export default function FileUploadZone({ onConfirm, onExtractOnly }: Props) {
   const [extractedText, setExtractedText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showWarning, setShowWarning] = useState(false);
+  const [showMemorySuccess, setShowMemorySuccess] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const ACCEPT = ".pdf,.xlsx,.xls,.docx,.jpg,.jpeg,.png,.webp";
@@ -32,12 +33,23 @@ export default function FileUploadZone({ onConfirm, onExtractOnly }: Props) {
 
     try {
       const balance = user?.point_balance ?? 0;
+      const isAdmin = user?.is_admin ?? false;
 
-      if (balance > 0) {
-        // 포인트 보유 유저: AI 자동 분류
-        const result = await profilesApi.parseFile(f);
-        setParsed(result.items);
-        setShowWarning(true);
+      if (balance > 0 || isAdmin) {
+        // 포인트 보유 유저 또는 어드민: AI 전략 메모리 변환 시도
+        setError(null);
+        try {
+          const result = await profilesApi.interpretFileToMemory(f);
+          // 성공 시 즉시 저장됨 -> 성공 상태로 변경
+          setParsed(null);
+          setShowMemorySuccess(true);
+        } catch (memErr) {
+          // 메모리 변환 실패 시 일반 파싱으로 폴백하거나 에러 표시
+          console.error("Memory interpretation failed, falling back to normal parsing:", memErr);
+          const result = await profilesApi.parseFile(f); 
+          setParsed(result.items);
+          setShowWarning(true);
+        }
       } else {
         // 미결제 유저: 텍스트 추출만
         const result = await profilesApi.extractFileTextOnly(f);
@@ -115,6 +127,31 @@ export default function FileUploadZone({ onConfirm, onExtractOnly }: Props) {
     );
   }
 
+  // AI 메모리 변환 성공 결과
+  if (showMemorySuccess) {
+    return (
+      <div className="space-y-4 p-8 border-2 border-primary/20 bg-primary/5 rounded-xl text-center">
+        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+          <UploadCloud className="text-primary" size={24} />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold">AI 전략 메모리 저장 완료!</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            업로드된 파일({file?.name})을 자소서 작성을 위한 전략적 데이터로 변환하여 DB에 안전하게 보관했습니다.
+          </p>
+        </div>
+        <div className="flex justify-center gap-2 mt-4">
+          <Button size="sm" onClick={() => { setFile(null); setShowMemorySuccess(false); }}>
+            새 파일 업로드
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => (window.location.href = "/profiles")}>
+            프로필 목록 확인
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // 텍스트 추출 결과 (미결제 유저)
   if (extractedText) {
     return (
@@ -168,8 +205,8 @@ export default function FileUploadZone({ onConfirm, onExtractOnly }: Props) {
           <div className="space-y-2">
             <UploadCloud size={32} className="mx-auto text-muted-foreground" />
             <p className="font-medium text-sm">파일을 드래그하거나 클릭하여 업로드</p>
-            <p className="text-xs text-muted-foreground">PDF, Excel, Word, 이미지 (최대 10MB)</p>
-            {(user?.point_balance ?? 0) === 0 && (
+            <p className="text-xs text-muted-foreground">PDF, Excel, Word, 이미지 (최대 100MB)</p>
+            {!( (user?.point_balance ?? 0) > 0 || user?.is_admin ) && (
               <p className="text-xs text-amber-600 mt-1">
                 ※ 포인트 미보유 시 텍스트 추출만 지원됩니다
               </p>
