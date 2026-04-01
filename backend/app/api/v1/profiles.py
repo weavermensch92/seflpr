@@ -84,10 +84,10 @@ async def extract_file_text_only(
     db: AsyncSession = Depends(get_db),
 ):
     """파일 업로드 → 텍스트 추출만 수행. (무료, AI 미사용)"""
-    MAX_SIZE = 10 * 1024 * 1024
+    MAX_SIZE = 100 * 1024 * 1024  # 100MB
     content = await file.read()
     if len(content) > MAX_SIZE:
-        raise HTTPException(status_code=413, detail="파일 크기는 10MB 이하여야 합니다.")
+        raise HTTPException(status_code=413, detail="파일 크기는 100MB 이하여야 합니다.")
     
     extracted_text = await _extract_text(content, file.content_type or "", file.filename or "")
     return {"filename": file.filename, "text": extracted_text}
@@ -100,14 +100,35 @@ async def parse_file(
     db: AsyncSession = Depends(get_db),
 ):
     """파일 업로드 → 텍스트 추출 → AI 파싱. (포인트 보유 유저만 가능)"""
-    MAX_SIZE = 10 * 1024 * 1024
+    MAX_SIZE = 100 * 1024 * 1024  # 100MB
     content = await file.read()
     if len(content) > MAX_SIZE:
-        raise HTTPException(status_code=413, detail="파일 크기는 10MB 이하여야 합니다.")
+        raise HTTPException(status_code=413, detail="파일 크기는 100MB 이하여야 합니다.")
 
     extracted_text = await _extract_text(content, file.content_type or "", file.filename or "")
     return await ProfileService(db).parse_free_text(
         user_id, FreeTextParseRequest(text=extracted_text[:8000])
+    )
+
+
+@router.post("/parse/file/memory", response_model=ProfileResponse)
+async def interpret_file_to_memory(
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """파일 업로드 → 고도의 AI 해석 → 자소서용 영구 메모리로 즉시 저장. (100MB 지원, 포인트 차감)"""
+    MAX_SIZE = 100 * 1024 * 1024  # 100MB
+    content = await file.read()
+    if len(content) > MAX_SIZE:
+        raise HTTPException(status_code=413, detail="파일 크기는 100MB 이하여야 합니다.")
+
+    extracted_text = await _extract_text(content, file.content_type or "", file.filename or "")
+    if not extracted_text.strip():
+        raise HTTPException(status_code=400, detail="파일에서 텍스트를 추출할 수 없습니다.")
+    
+    return await ProfileService(db).interpret_file_to_memory(
+        user_id, file.filename or "uploaded_file", extracted_text
     )
 
 

@@ -40,6 +40,8 @@ def _to_response(profile) -> ProfileResponse:
         end_date=profile.end_date,
         tags=profile.tags,
         metadata=profile.metadata_,
+        is_ai_memory=profile.is_ai_memory,
+        ai_interpreted_content=getattr(profile, "_ai_interpreted_content_plain", None),
         sort_order=profile.sort_order,
         source=profile.source,
     )
@@ -192,12 +194,10 @@ JSON 형식의 객체만 반환하세요.
         """파싱 결과를 확인 후 일괄 저장."""
         items_raw = []
         for item in req.items:
-            # item은 ProfileCreate 객체임 (프론트에서 이미 정제되어 올 수도 있음)
+            # item은 ProfileCreate 객체임
             raw = item.model_dump(by_alias=False)
             raw["metadata_"] = raw.pop("metadata_", None)
             
-            # 만약 날짜가 문자열로 넘어왔다면 (ProfileCreate 필드가 date 혹은 str일 수 있으나 schema상 date임)
-            # pydantic이 date 객체로 변환하지 못했을 경우를 대비해 수동 변환 확인
             if isinstance(raw.get("start_date"), str):
                 raw["start_date"] = _parse_date(raw["start_date"])
             if isinstance(raw.get("end_date"), str):
@@ -207,3 +207,73 @@ JSON 형식의 객체만 반환하세요.
         
         profiles = await self.repo.bulk_create(user_id, items_raw)
         return [_to_response(p) for p in profiles]
+
+    async def interpret_file_to_memory(self, user_id: str, filename: str, text: str) -> ProfileResponse:
+        """파일 텍스트를 AI가 자소서용 전략 메모리로 해석하여 즉시 저장합니다."""
+        from app.models.user import User
+        from sqlalchemy import select
+        
+        u_id = uuid.UUID(user_id)
+        
+        # 1. 포인트 체크 (30P 차감 또는 어드민 무제한)
+        from app.services.point_service import PointService
+        point_service = PointService(self.db)
+        await point_service.deduct_points(
+            user_id=u_id,
+            amount=30,
+            reason=f"AI Experience Interpretation: {filename}"
+        )
+
+        from app.core.config import settings
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+
+        # 2. AI 해석 프롬프트
+        # 자소서 작성에 최적화된 형식으로 텍스트를 재구성
+        prompt = f"""당신은 전문 취업 컨설턴트입니다. 아래 텍스트는 사용자가 업로드한 파일(포트폴리오, 프로젝트, 경력기술서 등)의 내용입니다.
+이 내용을 바탕으로 나중에 '자기소개서 작성 프롬프트'에서 AI가 참조할 수 있는 '핵심 경험 메모리'로 변환하세요.
+
+변환 지침:
+1. 단순 텍스트 추출이 아니라, "무엇을 했고(Action)", "어떤 성과를 냈으며(Result)", "이를 통해 어떤 역량을 증명(Competency)"할 수 있는지 중심으로 재구성하세요.
+2. STAR 기법(Situation, Task, Action, Result)으로 정리할 수 있다면 그렇게 하세요.
+3. 수치화된 성과가 있다면 반드시 포함하세요.
+4. 이 내용을 자소서의 '지원동기', '성장과정', '프로젝트 성과' 중 어디에 쓰면 좋을지도 짧게 제안하세요.
+
+입력 텍스트:
+{text[:10000]}  # 컨텍스트 제한 고려
+
+반환 형식:
+반드시 다음 JSON 구조로 응답하세요:
+{{
+  "title": "경험의 대표 제목",
+  "organization": "관련 조직명",
+  "role": "수행 직무/역할",
+  "interpreted_content": "AI가 재구성한 자소서용 핵심 메모리 내용 전체",
+  "tags": ["키워드1", "키워드2"],
+  "profile_type": "project|work_experience|activity 중 가장 적절한 것"
+}}
+"""
+        resp = await client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.3,
+        )
+        
+        interpreted = json.loads(resp.choices[0].message.content)
+        
+        # 3. DB 저장
+        profile_data = {
+            "profile_type": interpreted.get("profile_type", "project"),
+            "title": interpreted.get("title", f"AI 해석: {filename}"),
+            "organization": interpreted.get("organization"),
+            "role": interpreted.get("role"),
+            "description": text[:2000],  # 원본 텍스트 일부 보존
+            "is_ai_memory": True,
+            "ai_interpreted_content": interpreted.get("interpreted_content"),
+            "tags": interpreted.get("tags", []),
+            "source": ProfileSource.FILE_UPLOAD
+        }
+        
+        p = await self.repo.create(user_id, profile_data)
+        return _to_response(p)

@@ -15,6 +15,12 @@ class ProfileRepository:
             profile._description_plain = decrypt(profile.description_encrypted)
         else:
             profile._description_plain = None
+            
+        if profile.ai_interpreted_content_encrypted:
+            profile._ai_interpreted_content_plain = decrypt(profile.ai_interpreted_content_encrypted)
+        else:
+            profile._ai_interpreted_content_plain = None
+            
         return profile
 
     async def list_by_user(self, user_id: str | uuid.UUID) -> list[PersonalProfile]:
@@ -38,9 +44,11 @@ class ProfileRepository:
 
     async def create(self, user_id: str | uuid.UUID, data: dict) -> PersonalProfile:
         description = data.pop("description", None)
+        ai_interpreted = data.pop("ai_interpreted_content", None)
         profile = PersonalProfile(
             user_id=user_id,
             description_encrypted=encrypt(description) if description else None,
+            ai_interpreted_content_encrypted=encrypt(ai_interpreted) if ai_interpreted else None,
             **data,
         )
         self.db.add(profile)
@@ -52,6 +60,11 @@ class ProfileRepository:
         description = data.pop("description", ...)
         if description is not ...:
             profile.description_encrypted = encrypt(description) if description else None
+            
+        ai_interpreted = data.pop("ai_interpreted_content", ...)
+        if ai_interpreted is not ...:
+            profile.ai_interpreted_content_encrypted = encrypt(ai_interpreted) if ai_interpreted else None
+
         for k, v in data.items():
             if v is not None:
                 setattr(profile, k, v)
@@ -67,9 +80,11 @@ class ProfileRepository:
         profiles = []
         for data in items:
             description = data.pop("description", None)
+            ai_interpreted = data.pop("ai_interpreted_content", None)
             p = PersonalProfile(
                 user_id=user_id,
                 description_encrypted=encrypt(description) if description else None,
+                ai_interpreted_content_encrypted=encrypt(ai_interpreted) if ai_interpreted else None,
                 **data,
             )
             self.db.add(p)

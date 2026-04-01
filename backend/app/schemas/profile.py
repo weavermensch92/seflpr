@@ -15,6 +15,8 @@ class ProfileCreate(BaseModel):
     end_date: Optional[date | str] = None
     tags: Optional[list[str]] = None
     metadata_: Optional[dict[str, Any]] = Field(default=None, alias="metadata")
+    is_ai_memory: bool = False
+    ai_interpreted_content: Optional[str] = None
     sort_order: int = 0
     source: ProfileSource = ProfileSource.MANUAL
 
@@ -30,6 +32,8 @@ class ProfileUpdate(BaseModel):
     end_date: Optional[date | str] = None
     tags: Optional[list[str]] = None
     metadata_: Optional[dict[str, Any]] = Field(default=None, alias="metadata")
+    is_ai_memory: Optional[bool] = None
+    ai_interpreted_content: Optional[str] = None
     sort_order: Optional[int] = None
 
     model_config = {"populate_by_name": True}
@@ -46,6 +50,8 @@ class ProfileResponse(BaseModel):
     end_date: Optional[date]
     tags: Optional[list[str]]
     metadata: Optional[dict[str, Any]]
+    is_ai_memory: bool
+    ai_interpreted_content: Optional[str]
     sort_order: int
     source: ProfileSource
 

@@ -1,6 +1,6 @@
 import uuid
 from datetime import date, datetime, timezone
-from sqlalchemy import String, Integer, Date, DateTime, ForeignKey, Text, Enum as SAEnum
+from sqlalchemy import String, Integer, Date, DateTime, ForeignKey, Text, Boolean, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 import enum
@@ -50,10 +50,11 @@ class PersonalProfile(Base):
     tags: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
 
     # 유형별 추가 메타데이터
-    # education: {major, gpa, gpa_scale}
-    # work: {employment_type, department}
-    # project: {tech_stack, team_size, outcome}
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    metadata_: mapped_column("metadata", JSONB, nullable=True)
+
+    # AI 해석 데이터 (자소서용 메모리)
+    is_ai_memory: Mapped[bool] = mapped_column(Boolean, default=False)
+    ai_interpreted_content_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     source: Mapped[ProfileSource] = mapped_column(SAEnum(ProfileSource), default=ProfileSource.MANUAL)
