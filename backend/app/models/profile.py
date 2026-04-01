@@ -50,7 +50,7 @@ class PersonalProfile(Base):
     tags: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
 
     # 유형별 추가 메타데이터
-    metadata_: mapped_column("metadata", JSONB, nullable=True)
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
 
     # AI 해석 데이터 (자소서용 메모리)
     is_ai_memory: Mapped[bool] = mapped_column(Boolean, default=False)
