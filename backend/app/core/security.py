@@ -1,14 +1,11 @@
 import os
+import bcrypt
 import hashlib
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from jose import JWTError, jwt
-from passlib.context import CryptContext
-
 from app.core.config import settings
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def _load_key(env_var: str, file_path: str) -> str:
@@ -43,25 +40,29 @@ def get_public_key() -> str:
     return _load_key("JWT_PUBLIC_KEY", settings.JWT_PUBLIC_KEY_PATH)
 
 
+# BCrypt로 직접 해싱 (passlib 이슈 회피)
 def hash_password(password: str) -> str:
-    # bcrypt의 72바이트 제한을 위해 자르기만 수행 (호환성 최우선)
-    pw_to_hash = password[:72]
-    return pwd_context.hash(pw_to_hash)
+    # 72바이트 초과 시 자르기
+    pw_bytes = password[:72].encode("utf-8")
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(pw_bytes, salt)
+    return hashed.decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
     try:
-        # 1. 원본 검증 시도
-        if pwd_context.verify(plain[:72], hashed):
+        # 1. BCrypt 직접 검증 시도
+        pw_bytes = plain[:72].encode("utf-8")
+        hashed_bytes = hashed.encode("utf-8")
+        if bcrypt.checkpw(pw_bytes, hashed_bytes):
             return True
     except Exception:
         pass
 
-    # 2. (혹시 모르니) SHA256 전처리가 되어있을 경우를 대비한 방어 코드
+    # 2. (혹시 모르니) SHA256 전처리가 되어 있을 경우를 대비한 방어 코드
     try:
-        import hashlib
-        pw_hash = hashlib.sha256(plain.encode()).hexdigest()
-        if pwd_context.verify(pw_hash, hashed):
+        pw_hash = hashlib.sha256(plain.encode()).hexdigest()[:72].encode("utf-8")
+        if bcrypt.checkpw(pw_hash, hashed_bytes):
             return True
     except Exception:
         pass
