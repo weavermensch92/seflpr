@@ -140,9 +140,11 @@ class ProjectService:
             
         # 2. 관련 프로필 데이터 로드
         profile_repo = ProfileRepository(self.db)
-        profiles = await profile_repo.list_profiles(u_id)
+        profiles = await profile_repo.list_by_user(u_id)
+        
         profiles_text = "\n\n".join([
-            f"[{p.profile_type}] {p.title}\n{p.description}"
+            f"[{p.profile_type}] {p.title}\n" + 
+            (p.ai_interpreted_content if p.is_ai_memory and p.ai_interpreted_content else p.description)
             for p in profiles
         ])
         
