@@ -1,4 +1,5 @@
 import os
+import hashlib
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -43,11 +44,30 @@ def get_public_key() -> str:
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    # bcrypt 72바이트 제한 해결을 위해 SHA256으로 먼저 해싱
+    pw_hash = hashlib.sha256(password.encode()).hexdigest()
+    return pwd_context.hash(pw_hash)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    # 1. SHA256 pre-hashed를 사용하는 새 방식으로 먼저 시도
+    try:
+        pw_hash = hashlib.sha256(plain.encode()).hexdigest()
+        if pwd_context.verify(pw_hash, hashed):
+            return True
+    except Exception:
+        pass
+
+    # 2. 하위 호환성을 위해 예전 방식(원본 문자열 직접 검사)으로 시도
+    try:
+        # 72바이트를 초과하면 수동으로 잘라서라도 시도 (Passlib 에러 예방)
+        plain_bytes = plain.encode()
+        if len(plain_bytes) <= 72:
+            return pwd_context.verify(plain, hashed)
+    except Exception:
+        pass
+
+    return False
 
 
 def create_access_token(subject: str) -> str:
