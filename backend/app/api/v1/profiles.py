@@ -134,7 +134,12 @@ async def interpret_file_to_memory(
 
 async def _extract_text(content: bytes, content_type: str, filename: str) -> str:
     """파일 종류별 텍스트 추출."""
+    import traceback
+    import logging
+    logger = logging.getLogger(__name__)
+    
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    logger.info(f"파싱 시작: {filename} (Type: {content_type}, Ext: {ext})")
 
     # PDF
     if "pdf" in content_type or ext == "pdf":
@@ -184,10 +189,13 @@ async def _extract_text(content: bytes, content_type: str, filename: str) -> str
                 lines = [line[1][0] for block in result for line in block if line[1][1] > 0.5]
                 return "\n".join(lines)
             except ImportError:
+                logger.warning(f"PaddleOCR 미설치: {filename}")
                 return "[이미지 OCR: paddleocr 미설치 - 텍스트를 직접 입력해주세요]"
         except Exception as e:
+            logger.error(f"이미지 파싱 에러 ({filename}): {traceback.format_exc()}")
             return f"[이미지 처리 오류: {str(e)}]"
 
+    logger.warning(f"지원하지 않는 파일 형식: {filename} ({content_type})")
     return "[지원하지 않는 파일 형식입니다]"
 
 
