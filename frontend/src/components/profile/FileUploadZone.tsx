@@ -39,7 +39,7 @@ export default function FileUploadZone({ onConfirm, onExtractOnly }: Props) {
         // 포인트 보유 유저 또는 어드민: AI 전략 메모리 변환 시도
         setError(null);
         try {
-          const result = await profilesApi.interpretFileToMemory(f);
+          await profilesApi.interpretFileToMemory(f);
           // 성공 시 즉시 저장됨 -> 성공 상태로 변경
           setParsed(null);
           setShowMemorySuccess(true);

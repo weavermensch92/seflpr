@@ -1,7 +1,6 @@
 import { useCallback, useState, useRef } from "react";
 import {
   UploadCloud,
-  FileText,
   Link2,
   Type,
   CheckCircle2,
