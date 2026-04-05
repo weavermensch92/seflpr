@@ -10,33 +10,33 @@
 
 ## 서비스별 비용
 
-| 서비스 | 포인트 | 원화 |
-|--------|--------|------|
-| 자소서 프로젝트 생성 | **30P** | 3,000원 |
-| 면접 연습 세션 시작 | **60P** | 6,000원 |
-| 면접 신규 질문 | **3P** | 300원 |
-| 면접 꼬리 질문 | **1P** (질문당 최대 5개) | 100원 |
-| 프로필 AI 분류 (Ingest) | **5P** 또는 무료 3회 | 500원 |
-| 프로필 심층 분석 (Enrichment) | **15P** | 1,500원 |
-| AI 경험 해석 (Memory) | **30P** | 3,000원 |
+| 서비스 | 포인트 | 원화 환산 | 설정 위치 |
+|--------|--------|----------|----------|
+| 자소서 프로젝트 생성 | **30P** | 3,000원 | `PROJECT_PRICE` |
+| 면접 연습 세션 시작 | **60P** | 6,000원 | `INTERVIEW_PRICE` |
+| 면접 신규 질문 | **3P** | 300원 | 모델 상수 |
+| 면접 꼬리 질문 | **1P** (질문당 최대 5개) | 100원 | 모델 상수 |
+| 프로필 AI 분류 (Ingest) | **5P** 또는 무료 3회 | 500원 | — |
+| 프로필 심층 분석 (Enrichment) | **15P** | 1,500원 | — |
+| AI 경험 해석 (Memory) | **30P** | 3,000원 | — |
 
 ## 무료 혜택
 
-| 항목 | 값 |
-|------|-----|
-| 가입 웰컴 보너스 | **30P** |
-| 무료 프로필 Ingest | **3회** (가입 시 자동 부여) |
+| 항목 | 값 | 시점 |
+|------|-----|------|
+| 가입 웰컴 보너스 | **30P** | 회원가입 직후 자동 지급 |
+| 무료 프로필 Ingest | **3회** | 가입 시 `free_ingests_remaining=3` |
 
 ## 포인트 차감 규칙
 
 1. **선차감**: 서비스 실행 **전에** 포인트 차감
 2. **잔액 부족 시**: HTTP 402 (Payment Required) 반환
-3. **어드민 면제**: 어드민은 차감 없이 무제한 이용
+3. **어드민 면제**: `is_admin=True` 계정은 차감 없이 무제한 이용
 4. **동시성 제어**: `SELECT ... FOR UPDATE` 락으로 race condition 방지
 
 ## 포인트 트랜잭션 유형
 
-| 유형 | 설명 |
+| 유형 (`PointTransactionType`) | 설명 |
 |------|------|
 | `CHARGE` | 결제를 통한 충전 |
 | `CONSUME` | 서비스 이용 차감 |
@@ -45,17 +45,32 @@
 
 ### 트랜잭션 필드
 
-| 필드 | 설명 |
-|------|------|
-| `amount` | 변동량 (충전: +, 차감: -) |
-| `balance_after` | 변동 후 잔액 |
-| `reason` | 사유 (예: `project_create`, `profile_ingest`) |
-| `reference_id` | 관련 리소스 ID (프로젝트, 세션 등) |
-| `payment_id` | 연결된 결제 ID (충전 시) |
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `amount` | INTEGER | 변동량 (충전: +, 차감: -) |
+| `balance_after` | INTEGER | 변동 후 잔액 |
+| `reason` | VARCHAR | 사유 (예: `project_create`, `profile_ingest`, `신규 가입 웰컴 포인트`) |
+| `reference_id` | UUID | 관련 리소스 ID (프로젝트, 세션 등) |
+| `payment_id` | UUID | 연결된 결제 ID (충전 시) |
+
+## 어드민 포인트 지급
+
+```http
+POST /api/v1/admin/users/{user_id}/grant-points
+Content-Type: application/json
+
+{
+  "amount": 100,
+  "reason": "admin_grant"
+}
+```
+
+- `ADMIN_GRANT` 타입으로 PointTransaction 생성
+- 즉시 `users.point_balance` 반영
 
 ## AI 원가 분석
 
-### 자소서 1건당
+### 자소서 1건당 (~$0.13)
 
 | 단계 | 모델 | 비용 |
 |------|------|------|
@@ -67,7 +82,7 @@
 
 **마진: 3,000원 - 180원 = 2,820원/건 (94%)**
 
-### 면접 세션당 (20문답 기준)
+### 면접 세션당 (~$0.68, 20문답 기준)
 
 | 항목 | 비용 |
 |------|------|
@@ -77,7 +92,7 @@
 | 꼬리 질문 × 10 | ~$0.10 |
 | **합계** | **~$0.68 (약 940원)** |
 
-**마진: 10,000원 - 940원 = 9,060원/세션 (91%)**
+**마진: 6,000원 - 940원 = 5,060원/세션 (84%)**
 
 ### 기업 리서치 캐시 효과
 
@@ -88,21 +103,34 @@
 
 | 필드 | 설명 |
 |------|------|
-| `Payment.order_id` | 고유 주문 ID |
+| `Payment.order_id` | 고유 주문 ID (unique) |
 | `Payment.payment_key` | 토스 결제 키 |
 | `Payment.pg_response` | PG 응답 전문 (JSONB) |
+| `Payment.status` | `pending` → `completed` / `failed` / `cancelled` / `refunded` |
 
 ### 결제 플로우 (예정)
 
 ```
-유저 충전 요청 → 토스 위젯 → 결제 승인 → 서버 확인 → 포인트 충전
+유저 충전 요청
+  → 토스 위젯 렌더링 (TOSS_CLIENT_KEY)
+  → 결제 완료 콜백
+  → 서버에서 토스 API로 결제 승인 확인 (TOSS_SECRET_KEY)
+  → Payment.status = completed
+  → PointTransaction(CHARGE) 생성
+  → users.point_balance 증가
 ```
+
+### 환경변수
+
+| 변수 | 설명 |
+|------|------|
+| `TOSS_CLIENT_KEY` | 토스페이먼츠 클라이언트 키 (프론트엔드 위젯) |
+| `TOSS_SECRET_KEY` | 토스페이먼츠 시크릿 키 (서버 결제 승인) |
 
 ## 관련 파일
 
 - `backend/app/services/point_service.py` — 포인트 차감/충전/조회
 - `backend/app/models/payment.py` — Payment, PointTransaction 모델
-- `backend/app/api/v1/points.py` — 포인트 API
+- `backend/app/api/v1/points.py` — 포인트 잔액/이력 API
 - `backend/app/api/v1/admin.py` — 어드민 포인트 지급
-- `backend/app/core/config.py` — Business Rules (가격 설정)
-- `backend/app/models/interview.py` — 면접 포인트 상수
+- `backend/app/core/config.py` — 가격 설정 (PROJECT_PRICE 등)
