@@ -20,7 +20,7 @@ class ProjectAnswerResponse(ProjectAnswerBase):
     answer_text: Optional[str] = None
     status: AnswerStatus
     matched_profiles: Optional[list[dict]] = None
-    revisions_remaining: int
+    revisions_remaining: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
