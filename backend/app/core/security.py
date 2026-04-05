@@ -1,4 +1,5 @@
 import os
+import logging
 import bcrypt
 import hashlib
 from datetime import datetime, timedelta, timezone
@@ -6,6 +7,33 @@ from pathlib import Path
 
 from jose import JWTError, jwt
 from app.core.config import settings
+
+logger = logging.getLogger("app")
+
+_cached_private_key: str | None = None
+_cached_public_key: str | None = None
+
+
+def _generate_and_cache_keys() -> None:
+    global _cached_private_key, _cached_public_key
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives import serialization
+
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    _cached_private_key = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode()
+    _cached_public_key = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    ).decode()
+    logger.warning(
+        "JWT 키가 없어 RSA 2048 키쌍을 자동 생성했습니다. "
+        "재배포 시 기존 토큰이 무효화됩니다. "
+        "안정적인 운영을 위해 JWT_PRIVATE_KEY, JWT_PUBLIC_KEY 환경 변수를 설정하세요."
+    )
 
 
 def _load_key(env_var: str, file_path: str) -> str:
@@ -25,11 +53,14 @@ def _load_key(env_var: str, file_path: str) -> str:
             return path.read_text()
     except Exception:
         pass
-    
-    raise FileNotFoundError(
-        f"JWT key not found in env var '{env_var}' or file path. "
-        "Please check your Render Environment Variables."
-    )
+
+    # 4. 캐시된 자동 생성 키 확인
+    if _cached_private_key and _cached_public_key:
+        return _cached_private_key if "PRIVATE" in env_var else _cached_public_key
+
+    # 5. 키 자동 생성
+    _generate_and_cache_keys()
+    return _cached_private_key if "PRIVATE" in env_var else _cached_public_key
 
 
 def get_private_key() -> str:
