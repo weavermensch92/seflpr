@@ -19,40 +19,17 @@ async def lifespan(app: FastAPI):
     for dir_name in required_dirs:
         Path(dir_name).mkdir(parents=True, exist_ok=True)
 
-    # 서버 시작 시 DB 마이그레이션 자동 실행 (async 환경 대응)
+    # 서버 시작 시 DB 테이블 자동 생성
     try:
-        from sqlalchemy import pool
-        from sqlalchemy.engine import Connection
-        from sqlalchemy.ext.asyncio import async_engine_from_config
-        from alembic.config import Config
-        from alembic import context as alembic_context, command
-        from app.core.database import Base
+        from app.core.database import engine, Base
         import app.models  # noqa: F401
 
-        alembic_cfg = Config("alembic.ini")
-        configuration = alembic_cfg.get_section(alembic_cfg.config_ini_section, {})
-        configuration["sqlalchemy.url"] = settings.DATABASE_URL
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
-        connectable = async_engine_from_config(
-            configuration, prefix="sqlalchemy.", poolclass=pool.NullPool,
-        )
-
-        def do_run_migrations(connection: Connection) -> None:
-            alembic_context.configure(
-                connection=connection,
-                target_metadata=Base.metadata,
-                compare_type=True,
-            )
-            with alembic_context.begin_transaction():
-                alembic_context.run_migrations()
-
-        async with connectable.connect() as connection:
-            await connection.run_sync(do_run_migrations)
-        await connectable.dispose()
-
-        logging.getLogger("app").info("Alembic migration completed successfully.")
+        logging.getLogger("app").info("Database tables created/verified successfully.")
     except Exception as e:
-        logging.getLogger("app").warning(f"Alembic migration skipped: {e}")
+        logging.getLogger("app").warning(f"Database table creation skipped: {e}")
 
     yield
 
