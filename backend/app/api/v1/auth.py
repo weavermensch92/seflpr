@@ -1,14 +1,39 @@
-from fastapi import APIRouter, Depends, Response, Cookie
+from fastapi import APIRouter, Depends, Response, Cookie, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.config import settings
-from app.schemas.auth import RegisterRequest, LoginRequest, RegisterResponse, TokenResponse
+from app.schemas.auth import (
+    RegisterRequest, LoginRequest, RegisterResponse, TokenResponse,
+    SendOtpRequest, VerifyOtpRequest,
+)
 from app.services.auth_service import AuthService
+from app.services import sms_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 REFRESH_COOKIE_KEY = "refresh_token"
+
+
+@router.post("/phone/send-otp", status_code=200)
+async def send_otp(body: SendOtpRequest):
+    """전화번호 OTP 발송 (회원가입 전 인증)."""
+    try:
+        await sms_service.send_otp(body.phone_number)
+    except RuntimeError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+    return {"message": "인증번호가 발송되었습니다."}
+
+
+@router.post("/phone/verify-otp", status_code=200)
+async def verify_otp(body: VerifyOtpRequest):
+    """OTP 검증."""
+    if not sms_service.verify_otp(body.phone_number, body.code):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="인증번호가 올바르지 않거나 만료되었습니다.",
+        )
+    return {"message": "인증이 완료되었습니다.", "verified": True}
 
 
 @router.post("/register", response_model=RegisterResponse, status_code=201)

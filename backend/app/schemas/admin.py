@@ -1,6 +1,7 @@
 from pydantic import BaseModel, field_validator
 from typing import Optional
 from datetime import datetime
+import uuid
 
 
 class AdminStats(BaseModel):
@@ -54,3 +55,30 @@ class PromptConfigResponse(BaseModel):
 
 class PromptConfigUpdate(BaseModel):
     content: str
+
+
+# ── 사용자 관리 ───────────────────────────────────────────────
+class AdminUserResponse(BaseModel):
+    id: str
+    email: str
+    full_name: str
+    phone_number: Optional[str] = None
+    is_active: bool
+    is_admin: bool
+    point_balance: int
+    free_ingests_remaining: int
+    created_at: datetime
+    last_login_at: Optional[datetime] = None
+    payment_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def coerce_id(cls, v):
+        return str(v) if v is not None else v
+
+
+class GrantPointsRequest(BaseModel):
+    amount: int
+    reason: str = "admin_grant"

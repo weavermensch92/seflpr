@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     TOSS_CLIENT_KEY: str = ""
     TOSS_SECRET_KEY: str = ""
 
+    # SMS (CoolSMS) — 설정되지 않으면 개발 모드(로그 출력)
+    COOLSMS_API_KEY: Optional[str] = None
+    COOLSMS_API_SECRET: Optional[str] = None
+    COOLSMS_SENDER: Optional[str] = None   # 발신 번호 (예: 01012345678)
+
     # Superadmin seed (env only, never hardcoded)
     SUPERADMIN_EMAIL: Optional[str] = None
     SUPERADMIN_PASSWORD: Optional[str] = None

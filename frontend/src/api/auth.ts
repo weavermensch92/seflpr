@@ -4,6 +4,7 @@ export interface RegisterPayload {
   email: string;
   password: string;
   full_name: string;
+  phone_number: string;
 }
 
 export interface LoginPayload {
@@ -17,6 +18,7 @@ export interface UserInfo {
   full_name: string;
   is_admin: boolean;
   point_balance: number;
+  phone_number?: string | null;
 }
 
 export interface AuthResponse {
@@ -26,6 +28,12 @@ export interface AuthResponse {
 }
 
 export const authApi = {
+  sendOtp: (phone_number: string) =>
+    apiClient.post<{ message: string }>("/auth/phone/send-otp", { phone_number }).then((r) => r.data),
+
+  verifyOtp: (phone_number: string, code: string) =>
+    apiClient.post<{ message: string; verified: boolean }>("/auth/phone/verify-otp", { phone_number, code }).then((r) => r.data),
+
   register: (payload: RegisterPayload) =>
     apiClient.post<AuthResponse>("/auth/register", payload).then((r) => r.data),
 

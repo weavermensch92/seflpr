@@ -5,7 +5,10 @@ from typing import Optional
 from app.core.database import get_db
 from app.core.dependencies import get_current_admin_user_id
 from app.services.admin_service import AdminService
-from app.schemas.admin import AdminDashboardResponse, PromptConfigResponse, PromptConfigUpdate
+from app.schemas.admin import (
+    AdminDashboardResponse, PromptConfigResponse, PromptConfigUpdate,
+    AdminUserResponse, GrantPointsRequest,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -64,11 +67,29 @@ async def reset_prompt(
     return await AdminService(db).reset_prompt_config(prompt_key, admin_id)
 
 
+@router.get("/users", response_model=list[AdminUserResponse])
+async def list_users(
+    admin_id: str = Depends(get_current_admin_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """전체 가입자 목록 (포인트, 결제 여부, 계정 상태 포함)."""
+    return await AdminService(db).list_users()
+
+
+@router.post("/users/{user_id}/toggle-active", response_model=AdminUserResponse)
+async def toggle_user_active(
+    user_id: str,
+    admin_id: str = Depends(get_current_admin_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """계정 활성화/정지 토글."""
+    return await AdminService(db).toggle_user_active(user_id)
+
+
 @router.post("/users/{user_id}/grant-points")
 async def grant_points(
     user_id: str,
-    amount: int = Body(..., embed=True),
-    reason: str = Body("admin_grant", embed=True),
+    body: GrantPointsRequest,
     admin_id: str = Depends(get_current_admin_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -77,6 +98,6 @@ async def grant_points(
     import uuid
     u_id = uuid.UUID(user_id)
     point_service = PointService(db)
-    new_balance = await point_service.add_points(u_id, amount, reason)
+    new_balance = await point_service.add_points(u_id, body.amount, body.reason)
     await db.commit()
     return {"user_id": user_id, "new_balance": new_balance}

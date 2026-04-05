@@ -11,18 +11,39 @@ class AuthService:
         self.repo = UserRepository(db)
 
     async def register(self, data: RegisterRequest) -> RegisterResponse:
+        from app.services import sms_service
+
+        # 이메일 중복 확인
         existing = await self.repo.get_by_email(data.email)
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="이미 사용 중인 이메일입니다.",
             )
+
+        # 전화번호 중복 확인
+        existing_phone = await self.repo.get_by_phone(data.phone_number)
+        if existing_phone:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="이미 사용 중인 전화번호입니다.",
+            )
+
+        # OTP 인증 완료 확인
+        if not sms_service.is_verified(data.phone_number):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="전화번호 인증이 완료되지 않았습니다.",
+            )
+
         hashed = hash_password(data.password)
         user = await self.repo.create(
             email=data.email,
             password_hash=hashed,
             full_name=data.full_name,
+            phone_number=data.phone_number,
         )
+        sms_service.consume(data.phone_number)
 
         # 신규 가입 30P 무료 지급
         from app.services.point_service import PointService
@@ -41,6 +62,7 @@ class AuthService:
                 full_name=user.full_name,
                 is_admin=user.is_admin,
                 point_balance=9999999 if user.is_admin else user.point_balance,
+                phone_number=user.phone_number,
             ),
             access_token=access_token,
         )
@@ -69,6 +91,7 @@ class AuthService:
                 full_name=user.full_name,
                 is_admin=user.is_admin,
                 point_balance=9999999 if user.is_admin else user.point_balance,
+                phone_number=user.phone_number,
             ),
         }
 

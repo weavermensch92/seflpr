@@ -1,14 +1,16 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   Users, FileText, Briefcase, CheckCircle, Activity, Clock, ShieldCheck,
   Sliders, RotateCcw, Save, ChevronDown, ChevronUp, AlertTriangle,
+  Ban, CheckCircle2, Coins, Phone, LogIn,
 } from "lucide-react";
-import { adminApi, type PromptConfig, PROMPT_CATEGORY_LABELS } from "@/api/admin";
+import { adminApi, type PromptConfig, type AdminUser, PROMPT_CATEGORY_LABELS } from "@/api/admin";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
-type Tab = "dashboard" | "prompts";
+type Tab = "dashboard" | "users" | "prompts";
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState<Tab>("dashboard");
@@ -32,7 +34,8 @@ export default function AdminDashboard() {
       <div className="flex gap-1 border-b">
         {([
           { key: "dashboard", label: "대시보드", icon: Activity },
-          { key: "prompts", label: "프롬프트 관리", icon: Sliders },
+          { key: "users",     label: "사용자 관리", icon: Users },
+          { key: "prompts",   label: "프롬프트 관리", icon: Sliders },
         ] as const).map(({ key, label, icon: Icon }) => (
           <button
             key={key}
@@ -48,6 +51,7 @@ export default function AdminDashboard() {
       </div>
 
       {tab === "dashboard" && <DashboardTab />}
+      {tab === "users" && <UsersTab />}
       {tab === "prompts" && <PromptsTab />}
     </div>
   );
@@ -146,6 +150,243 @@ function DashboardTab() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 사용자 관리 탭 ───────────────────────────────────────────
+function UsersTab() {
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [grantTarget, setGrantTarget] = useState<AdminUser | null>(null);
+  const [grantAmount, setGrantAmount] = useState("");
+  const [grantReason, setGrantReason] = useState("admin_grant");
+
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ["admin", "users"],
+    queryFn: adminApi.listUsers,
+    refetchInterval: 30000,
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (userId: string) => adminApi.toggleUserActive(userId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "users"] }),
+  });
+
+  const grantMutation = useMutation({
+    mutationFn: ({ userId, amount, reason }: { userId: string; amount: number; reason: string }) =>
+      adminApi.grantPoints(userId, amount, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+      setGrantTarget(null);
+      setGrantAmount("");
+      setGrantReason("admin_grant");
+    },
+  });
+
+  const filtered = users.filter(
+    (u) =>
+      u.full_name.toLowerCase().includes(search.toLowerCase()) ||
+      u.email.toLowerCase().includes(search.toLowerCase()) ||
+      (u.phone_number ?? "").includes(search)
+  );
+
+  if (isLoading)
+    return <div className="py-20 text-center text-muted-foreground animate-pulse">불러오는 중...</div>;
+
+  return (
+    <div className="space-y-4">
+      {/* 검색 + 통계 */}
+      <div className="flex items-center justify-between gap-4">
+        <Input
+          placeholder="이름, 이메일, 전화번호 검색..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-xs"
+        />
+        <span className="text-sm text-muted-foreground shrink-0">
+          총 {users.length}명 · 활성 {users.filter((u) => u.is_active).length}명
+        </span>
+      </div>
+
+      {/* 포인트 지급 모달 */}
+      {grantTarget && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <div className="bg-card border rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4">
+            <h3 className="font-bold text-lg flex items-center gap-2">
+              <Coins size={18} className="text-amber-500" /> 포인트 지급
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{grantTarget.full_name}</span> ({grantTarget.email})
+              <br />현재 잔액: <span className="font-bold text-primary">{grantTarget.point_balance.toLocaleString()}P</span>
+            </p>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">지급 포인트</label>
+              <Input
+                type="number"
+                placeholder="예: 100"
+                value={grantAmount}
+                onChange={(e) => setGrantAmount(e.target.value)}
+                min={1}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">사유</label>
+              <Input
+                placeholder="admin_grant"
+                value={grantReason}
+                onChange={(e) => setGrantReason(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" className="flex-1" onClick={() => setGrantTarget(null)}>
+                취소
+              </Button>
+              <Button
+                className="flex-1 gap-1"
+                disabled={!grantAmount || Number(grantAmount) <= 0 || grantMutation.isPending}
+                onClick={() =>
+                  grantMutation.mutate({
+                    userId: grantTarget.id,
+                    amount: Number(grantAmount),
+                    reason: grantReason || "admin_grant",
+                  })
+                }
+              >
+                <Coins size={14} /> {grantMutation.isPending ? "지급 중..." : "지급"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 사용자 테이블 */}
+      <div className="bg-card border rounded-2xl overflow-hidden shadow-sm">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-muted/50 text-muted-foreground text-xs font-bold uppercase tracking-wide">
+            <tr>
+              <th className="px-5 py-3">사용자</th>
+              <th className="px-5 py-3">전화번호</th>
+              <th className="px-5 py-3 text-right">포인트</th>
+              <th className="px-5 py-3 text-right">결제</th>
+              <th className="px-5 py-3">마지막 로그인</th>
+              <th className="px-5 py-3">상태</th>
+              <th className="px-5 py-3 text-right">액션</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y border-t">
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-5 py-10 text-center text-muted-foreground">
+                  검색 결과 없음
+                </td>
+              </tr>
+            ) : (
+              filtered.map((u) => (
+                <tr key={u.id} className={`hover:bg-muted/20 transition-colors ${!u.is_active ? "opacity-50" : ""}`}>
+                  {/* 사용자 */}
+                  <td className="px-5 py-3">
+                    <p className="font-medium flex items-center gap-1.5">
+                      {u.full_name}
+                      {u.is_admin && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-emerald-400 text-emerald-600">ADMIN</Badge>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{u.email}</p>
+                  </td>
+
+                  {/* 전화번호 */}
+                  <td className="px-5 py-3 text-xs text-muted-foreground">
+                    {u.phone_number ? (
+                      <span className="flex items-center gap-1">
+                        <Phone size={11} /> {u.phone_number}
+                      </span>
+                    ) : (
+                      <span className="text-destructive/60">미인증</span>
+                    )}
+                  </td>
+
+                  {/* 포인트 */}
+                  <td className="px-5 py-3 text-right font-mono text-sm">
+                    {u.point_balance === 9999999 ? (
+                      <span className="text-emerald-600 font-bold">∞</span>
+                    ) : (
+                      <span className="font-medium">{u.point_balance.toLocaleString()}</span>
+                    )}
+                    <span className="text-xs text-muted-foreground ml-0.5">P</span>
+                  </td>
+
+                  {/* 결제 */}
+                  <td className="px-5 py-3 text-right">
+                    {u.payment_count > 0 ? (
+                      <span className="text-primary font-medium">{u.payment_count}건</span>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">없음</span>
+                    )}
+                  </td>
+
+                  {/* 마지막 로그인 */}
+                  <td className="px-5 py-3 text-xs text-muted-foreground">
+                    {u.last_login_at ? (
+                      <span className="flex items-center gap-1">
+                        <LogIn size={11} />
+                        {new Date(u.last_login_at).toLocaleDateString("ko-KR")}
+                      </span>
+                    ) : "-"}
+                  </td>
+
+                  {/* 상태 */}
+                  <td className="px-5 py-3">
+                    {u.is_active ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> 활성
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs text-destructive font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-destructive" /> 정지
+                      </span>
+                    )}
+                  </td>
+
+                  {/* 액션 */}
+                  <td className="px-5 py-3">
+                    <div className="flex items-center justify-end gap-1.5">
+                      {/* 포인트 지급 */}
+                      {!u.is_admin && (
+                        <Button
+                          variant="outline" size="sm"
+                          className="h-7 text-xs gap-1 border-amber-300 text-amber-700 hover:bg-amber-50"
+                          onClick={() => setGrantTarget(u)}
+                        >
+                          <Coins size={12} /> 포인트
+                        </Button>
+                      )}
+                      {/* 계정 정지/활성화 */}
+                      {!u.is_admin && (
+                        <Button
+                          variant="outline" size="sm"
+                          className={`h-7 text-xs gap-1 ${u.is_active
+                            ? "border-destructive/40 text-destructive hover:bg-destructive/5"
+                            : "border-emerald-400 text-emerald-700 hover:bg-emerald-50"}`}
+                          disabled={toggleMutation.isPending}
+                          onClick={() => {
+                            if (confirm(`${u.full_name} 계정을 ${u.is_active ? "정지" : "활성화"}할까요?`))
+                              toggleMutation.mutate(u.id);
+                          }}
+                        >
+                          {u.is_active
+                            ? <><Ban size={12} /> 정지</>
+                            : <><CheckCircle2 size={12} /> 활성화</>}
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
