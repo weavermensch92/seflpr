@@ -56,6 +56,10 @@ class PersonalProfile(Base):
     is_ai_memory: Mapped[bool] = mapped_column(Boolean, default=False)
     ai_interpreted_content_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Ingest enrichment 상태
+    enrichment_status: Mapped[str] = mapped_column(String(20), default="none")  # "none" | "pending" | "complete"
+    ai_summary_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     source: Mapped[ProfileSource] = mapped_column(SAEnum(ProfileSource), default=ProfileSource.MANUAL)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

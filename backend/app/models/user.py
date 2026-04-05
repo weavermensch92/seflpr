@@ -28,6 +28,7 @@ class User(Base):
     )
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     point_balance: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    free_ingests_remaining: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
 
     # Relationships
     profiles: Mapped[list["PersonalProfile"]] = relationship(back_populates="user", cascade="all, delete-orphan")

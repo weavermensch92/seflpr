@@ -1,15 +1,25 @@
 """AES-256-GCM 기반 개인정보 필드 암호화 유틸."""
 import os
+import logging
 import base64
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
+_FALLBACK_KEY: bytes | None = None
 
 
 def _get_key() -> bytes:
     key_hex = settings.ENCRYPTION_KEY
     if not key_hex:
-        # 개발 환경 fallback (프로덕션에서는 반드시 설정 필요)
-        return os.urandom(32)
+        if settings.is_production:
+            raise RuntimeError("ENCRYPTION_KEY must be set in production!")
+        global _FALLBACK_KEY
+        if _FALLBACK_KEY is None:
+            _FALLBACK_KEY = os.urandom(32)
+            logger.warning("Using random fallback encryption key — data will not survive restart!")
+        return _FALLBACK_KEY
     return bytes.fromhex(key_hex)
 
 

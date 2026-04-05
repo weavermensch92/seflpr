@@ -8,6 +8,11 @@ import enum
 from app.core.database import Base
 
 
+MAX_FOLLOW_UPS_PER_QUESTION = 5  # 꼬리질문 질문당 최대 개수
+POINT_COST_NEW_QUESTION = 3       # 신규 질문 포인트 비용
+POINT_COST_FOLLOW_UP = 1          # 꼬리 질문 포인트 비용
+
+
 class InterviewSessionStatus(str, enum.Enum):
     GENERATING = "generating"
     READY = "ready"
@@ -71,7 +76,7 @@ class InterviewQuestion(Base):
     is_follow_up: Mapped[bool] = mapped_column(Boolean, default=False)
     parent_question_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("interview_questions.id"), nullable=True)
 
-    points_consumed: Mapped[int] = mapped_column(Integer, default=0) # 이 질문에 소비된 포인트 (2 or 1, 첫 질문은 0)
+    points_consumed: Mapped[int] = mapped_column(Integer, default=0) # 이 질문에 소비된 포인트 (신규 3P, 꼬리 1P, 첫 질문은 0P)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 

@@ -30,8 +30,48 @@ export interface Profile {
   end_date?: string;
   tags?: string[];
   metadata?: Record<string, unknown>;
+  is_ai_memory?: boolean;
+  ai_interpreted_content?: string;
+  enrichment_status?: string;
+  ai_summary_json?: Record<string, unknown>;
   sort_order: number;
   source: string;
+}
+
+export interface TimelineEntry {
+  title: string;
+  organization?: string;
+  start_date?: string;
+  end_date?: string;
+  profile_type: string;
+}
+
+export interface AISummary {
+  key_strengths: string[];
+  experience_timeline: TimelineEntry[];
+  skill_tags: string[];
+  suggested_uses: string[];
+}
+
+export interface IngestResponse {
+  profiles: Profile[];
+  ai_summary?: AISummary;
+  enrichment_status: string;
+}
+
+export interface TagCount {
+  tag: string;
+  count: number;
+}
+
+export interface DashboardData {
+  total_profiles: number;
+  type_counts: Record<string, number>;
+  completeness_score: number;
+  timeline: TimelineEntry[];
+  skill_tags: TagCount[];
+  ai_strength_summary?: string;
+  top_tags: TagCount[];
 }
 
 export interface ProfileCreatePayload {
@@ -112,4 +152,29 @@ export const profilesApi = {
     apiClient
       .post<Profile[]>("/profiles/confirm", { items })
       .then((r) => r.data),
+
+  // ─── 통합 Ingest ───
+  ingest: (params: {
+    sourceType: "file" | "text" | "link";
+    enrichmentLevel?: "basic" | "full";
+    file?: File;
+    text?: string;
+    url?: string;
+  }): Promise<IngestResponse> => {
+    const fd = new FormData();
+    fd.append("source_type", params.sourceType);
+    fd.append("enrichment_level", params.enrichmentLevel || "basic");
+    if (params.file) fd.append("file", params.file);
+    if (params.text) fd.append("text", params.text);
+    if (params.url) fd.append("url", params.url);
+    return apiClient
+      .post<IngestResponse>("/profiles/ingest", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((r) => r.data);
+  },
+
+  // ─── Dashboard ───
+  dashboard: (): Promise<DashboardData> =>
+    apiClient.get<DashboardData>("/profiles/dashboard").then((r) => r.data),
 };

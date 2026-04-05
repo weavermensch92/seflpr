@@ -52,6 +52,8 @@ class ProfileResponse(BaseModel):
     metadata: Optional[dict[str, Any]]
     is_ai_memory: bool
     ai_interpreted_content: Optional[str]
+    enrichment_status: str = "none"
+    ai_summary_json: Optional[dict[str, Any]] = None
     sort_order: int
     source: ProfileSource
 
@@ -84,3 +86,40 @@ class FreeTextParseResponse(BaseModel):
 
 class BulkConfirmRequest(BaseModel):
     items: list[ProfileCreate]
+
+
+# ─── Unified Ingest ───────────────────────────────────────
+
+class TimelineEntry(BaseModel):
+    title: str
+    organization: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    profile_type: str
+
+class AISummary(BaseModel):
+    key_strengths: list[str] = []
+    experience_timeline: list[TimelineEntry] = []
+    skill_tags: list[str] = []
+    suggested_uses: list[str] = []  # e.g. "지원동기에 활용 가능"
+
+class IngestResponse(BaseModel):
+    profiles: list[ProfileResponse]
+    ai_summary: Optional[AISummary] = None
+    enrichment_status: str = "complete"  # "complete" | "pending"
+
+
+# ─── Dashboard ────────────────────────────────────────────
+
+class TagCount(BaseModel):
+    tag: str
+    count: int
+
+class DashboardResponse(BaseModel):
+    total_profiles: int
+    type_counts: dict[str, int]
+    completeness_score: int  # 0-100
+    timeline: list[TimelineEntry]
+    skill_tags: list[TagCount]
+    ai_strength_summary: Optional[str] = None
+    top_tags: list[TagCount] = []

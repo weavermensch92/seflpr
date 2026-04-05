@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -6,6 +7,7 @@ from app.core.dependencies import get_current_user_id
 from app.schemas.profile import (
     ProfileCreate, ProfileUpdate, ProfileResponse,
     FreeTextParseRequest, LinkParseRequest, FreeTextParseResponse, BulkConfirmRequest,
+    IngestResponse, DashboardResponse,
 )
 from app.services.profile_service import ProfileService
 
@@ -27,6 +29,42 @@ async def create_profile(
     db: AsyncSession = Depends(get_db),
 ):
     return await ProfileService(db).create_profile(user_id, body)
+
+
+# ─── Unified Ingest (통합 업로드) ─────────────────────────
+
+@router.post("/ingest", response_model=IngestResponse, status_code=201)
+async def ingest(
+    source_type: str = Form(..., description="file | text | link"),
+    enrichment_level: str = Form("basic", description="basic | full"),
+    file: Optional[UploadFile] = File(None),
+    text: Optional[str] = Form(None),
+    url: Optional[str] = Form(None),
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """통합 프로필 업로드. 파일/텍스트/링크 하나로 AI 분류 + 즉시 저장."""
+    if file and file.size and file.size > 100 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="파일 크기는 100MB 이하여야 합니다.")
+    return await ProfileService(db).ingest(
+        user_id=user_id,
+        source_type=source_type,
+        enrichment_level=enrichment_level,
+        file=file,
+        text=text,
+        url=url,
+    )
+
+
+# ─── Dashboard ────────────────────────────────────────────
+
+@router.get("/dashboard", response_model=DashboardResponse)
+async def get_dashboard(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """프로필 대시보드 데이터 (타임라인, 스킬분포, 완성도, AI 강점 요약)."""
+    return await ProfileService(db).get_dashboard(user_id)
 
 
 @router.get("/{profile_id}", response_model=ProfileResponse)

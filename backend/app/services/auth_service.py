@@ -23,6 +23,16 @@ class AuthService:
             password_hash=hashed,
             full_name=data.full_name,
         )
+
+        # 신규 가입 30P 무료 지급
+        from app.services.point_service import PointService
+        point_service = PointService(self.repo.db)
+        await point_service.add_points(
+            user_id=user.id,
+            amount=30,
+            reason="신규 가입 웰컴 포인트",
+        )
+
         access_token = create_access_token(str(user.id))
         return RegisterResponse(
             user=UserResponse(
