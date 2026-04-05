@@ -19,6 +19,14 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://selfpr:selfpr_secret@localhost:5432/selfpr"
 
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def fix_db_url(cls, v: str) -> str:
+        """Railway 등 외부 서비스의 postgresql:// URL을 asyncpg용으로 변환."""
+        if v.startswith("postgresql://"):
+            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
+
     # Redis
     REDIS_URL: str = "redis://:redis_secret@localhost:6379/0"
 
