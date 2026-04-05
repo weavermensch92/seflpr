@@ -18,6 +18,17 @@ async def lifespan(app: FastAPI):
     required_dirs = ["uploads", "keys", "temp"]
     for dir_name in required_dirs:
         Path(dir_name).mkdir(parents=True, exist_ok=True)
+
+    # 서버 시작 시 DB 마이그레이션 자동 실행
+    try:
+        from alembic.config import Config
+        from alembic import command
+        alembic_cfg = Config("alembic.ini")
+        command.upgrade(alembic_cfg, "head")
+        logging.getLogger("app").info("Alembic migration completed successfully.")
+    except Exception as e:
+        logging.getLogger("app").warning(f"Alembic migration skipped: {e}")
+
     yield
 
 # Rate Limiter
