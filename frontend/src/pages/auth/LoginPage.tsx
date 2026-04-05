@@ -49,13 +49,13 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">이메일</Label>
-            <Input id="email" type="email" placeholder="you@example.com" {...register("email")} />
+            <Input id="email" type="email" placeholder="you@example.com" autoComplete="email" {...register("email")} />
             {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="password">비밀번호</Label>
-            <Input id="password" type="password" placeholder="••••••••" {...register("password")} />
+            <Input id="password" type="password" placeholder="••••••••" autoComplete="current-password" {...register("password")} />
             {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
           </div>
 
