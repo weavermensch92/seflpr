@@ -3,7 +3,7 @@ import axios from "axios";
 const BASE_URL = 
   import.meta.env.VITE_API_URL || 
   import.meta.env.VITE_API_BASE_URL || 
-  (import.meta.env.PROD ? "https://seflpr-api.onrender.com" : "http://localhost:8000");
+  (import.meta.env.PROD ? "https://seflpr-production.up.railway.app" : "http://localhost:8000");
 
 export const apiClient = axios.create({
   baseURL: `${BASE_URL}/api/v1`,
