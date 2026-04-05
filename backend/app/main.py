@@ -31,6 +31,38 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logging.getLogger("app").warning(f"Database table creation skipped: {e}")
 
+    # Superadmin 자동 생성
+    try:
+        if settings.SUPERADMIN_EMAIL and settings.SUPERADMIN_PASSWORD and settings.SUPERADMIN_NAME:
+            from sqlalchemy import select
+            from app.core.database import AsyncSessionLocal
+            from app.core.security import hash_password
+            from app.models.user import User
+
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(select(User).where(User.email == settings.SUPERADMIN_EMAIL))
+                existing = result.scalar_one_or_none()
+
+                if not existing:
+                    admin = User(
+                        email=settings.SUPERADMIN_EMAIL,
+                        password_hash=hash_password(settings.SUPERADMIN_PASSWORD),
+                        full_name=settings.SUPERADMIN_NAME,
+                        is_active=True,
+                        is_admin=True,
+                        point_balance=9999999,
+                    )
+                    db.add(admin)
+                    await db.commit()
+                    logging.getLogger("app").info(f"Superadmin created: {settings.SUPERADMIN_EMAIL}")
+                elif not existing.is_admin:
+                    existing.is_admin = True
+                    existing.point_balance = 9999999
+                    await db.commit()
+                    logging.getLogger("app").info(f"Superadmin promoted: {settings.SUPERADMIN_EMAIL}")
+    except Exception as e:
+        logging.getLogger("app").warning(f"Superadmin seed skipped: {e}")
+
     yield
 
 # Rate Limiter
