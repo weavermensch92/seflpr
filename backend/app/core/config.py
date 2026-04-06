@@ -63,14 +63,20 @@ class Settings(BaseSettings):
     SUPERADMIN_PASSWORD: Optional[str] = None
     SUPERADMIN_NAME: Optional[str] = None
 
-    # Business Rules
-    PROJECT_PRICE: int = 5000          # 자소서 프로젝트 생성 가격 (원)
-    REFILL_PRICE: int = 5000           # 수정 충전 가격 (원)
-    INTERVIEW_PRICE: int = 10000       # 면접 연습 세트 가격 (원)
-    MAX_QUESTIONS_PER_PROJECT: int = 6 # 자소서 최대 질문 수
-    MAX_ANSWER_REVISIONS: int = 5      # 답변 최대 수정 횟수
-    MAX_INTERVIEW_QUESTIONS: int = 30  # 면접 예상 질문 최대 수
-    COMPANY_CACHE_TTL_DAYS: int = 7    # 기업 리서치 캐시 유지 기간
+    # Business Rules (포인트 단위, 1P = 100원)
+    WELCOME_POINTS: int = 15                # 신규 가입 웰컴 포인트
+    PROJECT_COST_POINTS: int = 30           # 자소서 프로젝트 생성 (30P = 3,000원)
+    INTERVIEW_SESSION_COST_POINTS: int = 60 # 면접 세션 시작 (60P = 6,000원)
+    INTERVIEW_NEW_QUESTION_POINTS: int = 3  # 면접 신규 질문 (3P = 300원)
+    INTERVIEW_FOLLOW_UP_POINTS: int = 1     # 면접 꼬리 질문 (1P = 100원)
+    INGEST_COST_POINTS: int = 5             # 프로필 AI 분류 (5P = 500원)
+    ENRICHMENT_COST_POINTS: int = 15        # 프로필 심층 분석 (15P = 1,500원)
+    MEMORY_COST_POINTS: int = 30            # AI 경험 해석 (30P = 3,000원)
+    FREE_INGESTS_PER_USER: int = 3          # 무료 Ingest 횟수
+    MAX_FOLLOW_UPS_PER_QUESTION: int = 5    # 꼬리 질문 최대 개수
+    MAX_QUESTIONS_PER_PROJECT: int = 6      # 자소서 최대 질문 수
+    MAX_INTERVIEW_QUESTIONS: int = 30       # 면접 세션당 최대 질문 수
+    COMPANY_CACHE_TTL_DAYS: int = 7         # 기업 리서치 캐시 유지 기간
 
     @field_validator("CORS_ORIGINS")
     @classmethod

@@ -45,12 +45,13 @@ class AuthService:
         )
         sms_service.consume(data.phone_number)
 
-        # 신규 가입 30P 무료 지급
+        # 신규 가입 웰컴 포인트 지급 (무료 Ingest 3회 별도 + 심층 분석 1회 체험)
         from app.services.point_service import PointService
+        from app.core.config import settings
         point_service = PointService(self.repo.db)
         await point_service.add_points(
             user_id=user.id,
-            amount=30,
+            amount=settings.WELCOME_POINTS,
             reason="신규 가입 웰컴 포인트",
         )
 

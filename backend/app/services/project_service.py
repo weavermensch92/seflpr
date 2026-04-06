@@ -18,11 +18,12 @@ class ProjectService:
         from app.services.point_service import PointService
         u_id = uuid.UUID(user_id)
         
-        # 1. 포인트 차감 (30P)
+        # 1. 포인트 차감
+        from app.core.config import settings
         point_service = PointService(self.db)
         await point_service.deduct_points(
             user_id=u_id,
-            amount=30,
+            amount=settings.PROJECT_COST_POINTS,
             reason="project_create"
         )
         

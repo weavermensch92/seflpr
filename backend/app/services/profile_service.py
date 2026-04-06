@@ -268,15 +268,15 @@ JSON 형식의 객체만 반환하세요.
         if not user.is_admin:
             if user.free_ingests_remaining > 0:
                 user.free_ingests_remaining -= 1
-            elif user.point_balance < 5:
+            elif user.point_balance < settings.INGEST_COST_POINTS:
                 raise HTTPException(
                     status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                    detail="포인트가 부족합니다. (AI 분류: 5P 필요)"
+                    detail=f"포인트가 부족합니다. (AI 분류: {settings.INGEST_COST_POINTS}P 필요)"
                 )
             else:
                 from app.services.point_service import PointService
                 point_service = PointService(self.db)
-                await point_service.deduct_points(u_id, 5, "profile_ingest")
+                await point_service.deduct_points(u_id, settings.INGEST_COST_POINTS, "profile_ingest")
 
         parsed = await self._ai_categorize(extracted_text, settings)
 
@@ -303,12 +303,12 @@ JSON 형식의 객체만 반환하세요.
         enrichment_status = "complete"
         if enrichment_level == "full":
             if not user.is_admin:
-                if user.point_balance < 15:
+                if user.point_balance < settings.ENRICHMENT_COST_POINTS:
                     enrichment_status = "skipped_insufficient_points"
                 else:
                     from app.services.point_service import PointService
                     point_service = PointService(self.db)
-                    await point_service.deduct_points(u_id, 15, "profile_enrichment")
+                    await point_service.deduct_points(u_id, settings.ENRICHMENT_COST_POINTS, "profile_enrichment")
                     await self._run_deep_enrichment(profiles, extracted_text, settings)
                     enrichment_status = "complete"
             else:
@@ -645,16 +645,15 @@ JSON 형식으로 반환:
         
         u_id = uuid.UUID(user_id)
         
-        # 1. 포인트 체크 (30P 차감 또는 어드민 무제한)
+        # 1. 포인트 체크 (MEMORY_COST_POINTS 차감 또는 어드민 무제한)
         from app.services.point_service import PointService
+        from app.core.config import settings
         point_service = PointService(self.db)
         await point_service.deduct_points(
             user_id=u_id,
-            amount=30,
+            amount=settings.MEMORY_COST_POINTS,
             reason=f"AI Experience Interpretation: {filename}"
         )
-
-        from app.core.config import settings
         from openai import AsyncOpenAI
         client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
