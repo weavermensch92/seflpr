@@ -12,6 +12,8 @@ import ProjectListPage from "@/pages/projects/ProjectListPage";
 import ProjectCreatePage from "@/pages/projects/ProjectCreatePage";
 import ProjectDetailPage from "@/pages/projects/ProjectDetailPage";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
+import InterviewSessionPage from "@/pages/interviews/InterviewSessionPage";
+import InterviewSummaryPage from "@/pages/interviews/InterviewSummaryPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,6 +38,8 @@ export default function App() {
               <Route path="/projects" element={<ProjectListPage />} />
               <Route path="/projects/new" element={<ProjectCreatePage />} />
               <Route path="/projects/:id" element={<ProjectDetailPage />} />
+              <Route path="/projects/:id/interviews/:sessionId" element={<InterviewSessionPage />} />
+              <Route path="/projects/:id/interviews/:sessionId/summary" element={<InterviewSummaryPage />} />
               {/* Admin-only routes — is_admin 아니면 /dashboard로 */}
               <Route element={<RequireAdmin />}>
                 <Route path="/admin" element={<AdminDashboard />} />
