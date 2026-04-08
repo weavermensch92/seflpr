@@ -137,6 +137,27 @@ class AdminService:
         from app.agents.prompts.humanizer_prompts import (
             HUMANIZER_SYSTEM_PROMPT, HUMANIZER_DETECT_TEMPLATE, HUMANIZER_REWRITE_TEMPLATE,
         )
+        from app.agents.prompts.interview_prompts import (
+            INTERVIEW_GENERATOR_SYSTEM, INTERVIEW_GENERATOR_USER, INTERVIEW_FOLLOW_UP_USER,
+            INTERVIEW_FEEDBACK_SYSTEM, INTERVIEW_FEEDBACK_USER, INTERVIEW_SUMMARY_USER,
+        )
+
+        # 기업 리서치 프롬프트 (researcher.py에서 직접 정의)
+        RESEARCHER_SYSTEM = """당신은 한국 취업 시장 전문 리서처입니다.
+기업과 직무에 대한 최신 정보를 수집하여 취업 준비생에게 도움이 되는 리서치를 제공합니다.
+정확하고 구체적인 정보를 JSON 형식으로 정리하세요."""
+
+        RESEARCHER_USER = """기업 '{company_name}'의 '{position}' 직무에 대해 최신 정보를 포함하여 리서치하세요.
+
+반드시 다음 항목을 포함하여 JSON으로 반환하세요:
+- overview: 기업 개요 및 주요 사업 (2-3문장)
+- core_values: 핵심 가치 및 인재상 (배열)
+- recent_news: 최근 주요 뉴스/트렌드 (배열, 각 항목 1-2문장)
+- talent_keywords: 해당 직무에서 강조하는 역량 키워드 (3-5개 배열)
+- interview_tips: 이 기업 면접에서 자주 나오는 질문 유형 (2-3개 배열)
+
+JSON 형식만 반환하세요:
+{{ "overview": "...", "core_values": [...], "recent_news": [...], "talent_keywords": [...], "interview_tips": [...] }}"""
 
         code_defaults = {
             "generator_system": GENERATOR_SYSTEM_PROMPT,
@@ -150,6 +171,14 @@ class AdminService:
             "humanizer_system": HUMANIZER_SYSTEM_PROMPT,
             "humanizer_detect": HUMANIZER_DETECT_TEMPLATE,
             "humanizer_rewrite": HUMANIZER_REWRITE_TEMPLATE,
+            "researcher_system": RESEARCHER_SYSTEM,
+            "researcher_user": RESEARCHER_USER,
+            "interview_generator_system": INTERVIEW_GENERATOR_SYSTEM,
+            "interview_generator_user": INTERVIEW_GENERATOR_USER,
+            "interview_follow_up_user": INTERVIEW_FOLLOW_UP_USER,
+            "interview_feedback_system": INTERVIEW_FEEDBACK_SYSTEM,
+            "interview_feedback_user": INTERVIEW_FEEDBACK_USER,
+            "interview_summary_user": INTERVIEW_SUMMARY_USER,
         }
 
         new_records = []

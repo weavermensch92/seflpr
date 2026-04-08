@@ -41,6 +41,8 @@ export const PROMPT_CATEGORY_LABELS: Record<string, string> = {
   reviewer: "AI 검토",
   gap: "프로필 갭 분석",
   humanizer: "AI 어투 제거",
+  researcher: "기업 리서치",
+  interview: "면접 연습",
 };
 
 export interface AdminUser {

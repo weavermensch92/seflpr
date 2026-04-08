@@ -64,6 +64,48 @@ PROMPT_DEFAULTS = {
         "description": "AI 패턴 제거 후 사람처럼 재작성하는 프롬프트.",
         "category": "humanizer",
     },
+    # ── 기업 리서치 ──
+    "researcher_system": {
+        "label": "기업 리서치 — 시스템 프롬프트",
+        "description": "기업/직무 정보를 수집·분석하는 시스템 지침.",
+        "category": "researcher",
+    },
+    "researcher_user": {
+        "label": "기업 리서치 — 유저 템플릿",
+        "description": "기업명·포지션을 입력받아 리서치 결과를 JSON으로 반환.",
+        "category": "researcher",
+    },
+    # ── 면접 연습 ──
+    "interview_generator_system": {
+        "label": "면접 질문 생성 — 시스템 프롬프트",
+        "description": "면접 예상 질문을 생성하는 시스템 지침.",
+        "category": "interview",
+    },
+    "interview_generator_user": {
+        "label": "면접 질문 생성 — 유저 템플릿",
+        "description": "자소서+기업정보 기반 질문 생성 포맷.",
+        "category": "interview",
+    },
+    "interview_follow_up_user": {
+        "label": "면접 꼬리 질문 — 유저 템플릿",
+        "description": "답변 기반 꼬리 질문 생성 포맷.",
+        "category": "interview",
+    },
+    "interview_feedback_system": {
+        "label": "면접 피드백 — 시스템 프롬프트",
+        "description": "답변 평가·피드백을 제공하는 시스템 지침.",
+        "category": "interview",
+    },
+    "interview_feedback_user": {
+        "label": "면접 피드백 — 유저 템플릿",
+        "description": "질문+답변을 입력받아 피드백 JSON 반환.",
+        "category": "interview",
+    },
+    "interview_summary_user": {
+        "label": "면접 세션 요약 — 유저 템플릿",
+        "description": "전체 Q&A 종합 분석 포맷.",
+        "category": "interview",
+    },
 }
 
 

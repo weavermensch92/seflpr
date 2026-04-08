@@ -406,7 +406,7 @@ class ProjectService:
         
         # 2. 리서치 실행
         agent = ResearcherAgent()
-        research_data = await agent.fetch_company_info(project.company_name, project.position)
+        research_data = await agent.fetch_company_info(project.company_name, project.position, db=self.db)
         
         # 3. 캐시 저장 
         company_repo = CompanyRepository(self.db)
