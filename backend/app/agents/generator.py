@@ -37,6 +37,7 @@ class GeneratorAgent:
         profiles_text: str,
         experience_level: str = "신입",
         company_research: str = "",
+        tone: str = "정중한 존댓말",
         focus_keywords: str = "",
         db: Optional[AsyncSession] = None,
     ) -> str:
