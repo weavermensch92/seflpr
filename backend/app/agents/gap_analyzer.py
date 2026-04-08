@@ -1,16 +1,16 @@
 import json
-from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from app.core.config import settings
 from app.agents.prompts.gap_prompts import GAP_SYSTEM_PROMPT, GAP_ANALYSIS_TEMPLATE
 
 
 class GapAnalyzerAgent:
-    def __init__(self, model_name: str = "claude-sonnet-4-6", temperature: float = 0.2):
-        self.llm = ChatAnthropic(
+    def __init__(self, model_name: str = "gpt-4o", temperature: float = 0.2):
+        self.llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            api_key=settings.ANTHROPIC_API_KEY,
+            api_key=settings.OPENAI_API_KEY,
         )
 
     async def analyze(
@@ -36,7 +36,6 @@ class GapAnalyzerAgent:
         })
 
         raw = result.content.strip()
-        # 마크다운 코드블록 제거
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):

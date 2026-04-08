@@ -1,5 +1,4 @@
 from typing import Optional
-from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,17 +9,11 @@ from app.agents.prompts.generator_prompts import GENERATOR_SYSTEM_PROMPT, GENERA
 
 
 class GeneratorAgent:
-    def __init__(self, model_name: str = "claude-sonnet-4-6", temperature: float = 0.7):
+    def __init__(self, model_name: str = "gpt-4o", temperature: float = 0.7):
         self.model_name = model_name
         self.temperature = temperature
 
     def _get_llm(self):
-        if "claude" in self.model_name:
-            return ChatAnthropic(
-                model=self.model_name,
-                temperature=self.temperature,
-                api_key=settings.ANTHROPIC_API_KEY,
-            )
         return ChatOpenAI(
             model=self.model_name,
             temperature=self.temperature,

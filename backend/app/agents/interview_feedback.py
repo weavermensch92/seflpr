@@ -1,6 +1,6 @@
 import json
 import logging
-from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,16 +16,15 @@ logger = logging.getLogger(__name__)
 
 
 class InterviewFeedbackAgent:
-    def __init__(self, model_name: str = "claude-sonnet-4-6", temperature: float = 0.3):
+    def __init__(self, model_name: str = "gpt-4o", temperature: float = 0.3):
         self.model_name = model_name
         self.temperature = temperature
 
     def _get_llm(self):
-        return ChatAnthropic(
+        return ChatOpenAI(
             model=self.model_name,
-            api_key=settings.ANTHROPIC_API_KEY,
+            api_key=settings.OPENAI_API_KEY,
             temperature=self.temperature,
-            max_tokens=4096,
         )
 
     async def generate_feedback(

@@ -1,5 +1,5 @@
 from typing import Optional
-from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,11 +14,11 @@ from app.agents.prompts.reviewer_prompts import (
 
 
 class ReviewerAgent:
-    def __init__(self, model_name: str = "claude-sonnet-4-6", temperature: float = 0.3):
-        self.llm = ChatAnthropic(
+    def __init__(self, model_name: str = "gpt-4o", temperature: float = 0.3):
+        self.llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            api_key=settings.ANTHROPIC_API_KEY,
+            api_key=settings.OPENAI_API_KEY,
         )
 
     async def get_opinion(self, answer_text: str, db: Optional[AsyncSession] = None) -> str:
