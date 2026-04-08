@@ -54,6 +54,10 @@ def _to_response(profile) -> ProfileResponse:
     )
 
 
+# 유저별 AI 강점 요약 캐시 {user_id: (summary, profile_count)}
+_strength_cache: dict[str, tuple[str, int]] = {}
+
+
 class ProfileService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -69,10 +73,14 @@ class ProfileService:
             raise HTTPException(status_code=404, detail="프로필을 찾을 수 없습니다.")
         return _to_response(p)
 
+    def _invalidate_dashboard_cache(self, user_id: str) -> None:
+        _strength_cache.pop(user_id, None)
+
     async def create_profile(self, user_id: str, data: ProfileCreate) -> ProfileResponse:
         raw = data.model_dump(by_alias=False)
         raw["metadata_"] = raw.pop("metadata_", None)
         p = await self.repo.create(user_id, raw)
+        self._invalidate_dashboard_cache(user_id)
         return _to_response(p)
 
     async def update_profile(self, profile_id: str, user_id: str, data: ProfileUpdate) -> ProfileResponse:
@@ -83,6 +91,7 @@ class ProfileService:
         if "metadata_" in raw:
             raw["metadata_"] = raw.pop("metadata_")
         updated = await self.repo.update(p, raw)
+        self._invalidate_dashboard_cache(user_id)
         return _to_response(updated)
 
     async def delete_profile(self, profile_id: str, user_id: str) -> None:
@@ -90,6 +99,7 @@ class ProfileService:
         if not p:
             raise HTTPException(status_code=404, detail="프로필을 찾을 수 없습니다.")
         await self.repo.delete(p)
+        self._invalidate_dashboard_cache(user_id)
 
     async def parse_free_text(self, user_id: str, req: FreeTextParseRequest) -> FreeTextParseResponse:
         """자유 텍스트를 GPT-4o-mini로 파싱하여 프로필 항목 목록 반환."""
@@ -321,6 +331,7 @@ JSON 형식의 객체만 반환하세요.
             profile_responses = [_to_response(p) for p in refreshed if str(p.id) in saved_ids]
 
         await self.db.commit()
+        self._invalidate_dashboard_cache(user_id)
 
         return IngestResponse(
             profiles=profile_responses,
@@ -591,10 +602,16 @@ JSON 형식으로 반환:
         # 스킬 태그 (skill 타입 프로필 기반)
         skill_tags = [TagCount(tag=tag, count=count) for tag, count in tag_counter.most_common(10)]
 
-        # AI 강점 요약 (프로필 3개 이상이면 생성)
+        # AI 강점 요약 (프로필 3개 이상 + 캐시 활용)
         ai_strength_summary = None
         if len(profiles) >= 3:
-            ai_strength_summary = await self._generate_strength_summary(profiles)
+            cached = _strength_cache.get(user_id)
+            if cached and cached[1] == len(profiles):
+                ai_strength_summary = cached[0]
+            else:
+                ai_strength_summary = await self._generate_strength_summary(profiles)
+                if ai_strength_summary:
+                    _strength_cache[user_id] = (ai_strength_summary, len(profiles))
 
         return DashboardResponse(
             total_profiles=len(profiles),
