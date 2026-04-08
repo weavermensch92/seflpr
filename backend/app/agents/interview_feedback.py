@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class InterviewFeedbackAgent:
-    def __init__(self, model_name: str = "gpt-4o", temperature: float = 0.3):
+    def __init__(self, model_name: str = "gpt-5.4", temperature: float = 0.3):
         self.model_name = model_name
         self.temperature = temperature
 

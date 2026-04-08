@@ -32,7 +32,7 @@ JSON 형식만 반환하세요:
         try:
             # GPT-4o with web search
             resp = await self.client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-5.4",
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"},
                 temperature=0.3,
@@ -69,7 +69,7 @@ JSON만 반환하세요."""}],
         """GPT를 활용한 웹 검색 대체."""
         try:
             resp = await self.client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-5.4",
                 messages=[{"role": "user", "content": f"다음 주제에 대해 최신 정보를 포함하여 간결하게 요약해주세요:\n\n{query}"}],
                 temperature=0.3,
                 max_tokens=500,

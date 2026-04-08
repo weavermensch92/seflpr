@@ -162,7 +162,8 @@ class ProjectService:
             char_limit=answer.char_limit or 500,
             profiles_text=profiles_text,
             tone=tone,
-            focus_keywords=focus
+            focus_keywords=focus,
+            db=self.db,
         )
         
         # 4. 결과 저장

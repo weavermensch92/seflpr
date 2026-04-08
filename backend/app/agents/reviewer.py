@@ -14,7 +14,7 @@ from app.agents.prompts.reviewer_prompts import (
 
 
 class ReviewerAgent:
-    def __init__(self, model_name: str = "gpt-4o", temperature: float = 0.3):
+    def __init__(self, model_name: str = "gpt-5.4", temperature: float = 0.3):
         self.llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,

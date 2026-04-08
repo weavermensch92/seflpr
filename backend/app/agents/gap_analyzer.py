@@ -6,7 +6,7 @@ from app.agents.prompts.gap_prompts import GAP_SYSTEM_PROMPT, GAP_ANALYSIS_TEMPL
 
 
 class GapAnalyzerAgent:
-    def __init__(self, model_name: str = "gpt-4o", temperature: float = 0.2):
+    def __init__(self, model_name: str = "gpt-5.4", temperature: float = 0.2):
         self.llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,

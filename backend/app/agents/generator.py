@@ -9,7 +9,7 @@ from app.agents.prompts.generator_prompts import GENERATOR_SYSTEM_PROMPT, GENERA
 
 
 class GeneratorAgent:
-    def __init__(self, model_name: str = "gpt-4o", temperature: float = 0.7):
+    def __init__(self, model_name: str = "gpt-5.4", temperature: float = 0.7):
         self.model_name = model_name
         self.temperature = temperature
 
@@ -54,5 +54,6 @@ class GeneratorAgent:
             "profiles_text": profiles_text,
             "company_research": company_research or "기업 리서치 미수행",
             "focus_keywords": focus_keywords or "없음",
+            "tone": tone,
         })
         return result.content

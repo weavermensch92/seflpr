@@ -13,7 +13,7 @@ from app.agents.prompts.humanizer_prompts import (
 
 
 class HumanizerAgent:
-    def __init__(self, model_name: str = "gpt-4o", temperature: float = 0.6):
+    def __init__(self, model_name: str = "gpt-5.4", temperature: float = 0.6):
         self.llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,
