@@ -19,13 +19,29 @@ async def lifespan(app: FastAPI):
     for dir_name in required_dirs:
         Path(dir_name).mkdir(parents=True, exist_ok=True)
 
-    # 서버 시작 시 DB 테이블 자동 생성
+    # 서버 시작 시 DB 테이블 자동 생성 + 누락 컬럼 추가
     try:
         from app.core.database import engine, Base
+        from sqlalchemy import text, inspect as sa_inspect
         import app.models  # noqa: F401
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+            # 누락된 컬럼 자동 추가 (create_all은 기존 테이블에 컬럼을 추가하지 않음)
+            missing_columns = [
+                ("users", "phone_number", "VARCHAR(20) UNIQUE"),
+                ("users", "free_ingests_remaining", "INTEGER NOT NULL DEFAULT 3"),
+                ("personal_profiles", "enrichment_status", "VARCHAR(20) NOT NULL DEFAULT 'none'"),
+                ("personal_profiles", "ai_summary_json", "JSONB"),
+            ]
+            for table, column, col_type in missing_columns:
+                try:
+                    await conn.execute(text(
+                        f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {col_type}"
+                    ))
+                except Exception:
+                    pass  # 이미 존재하면 무시
 
         logging.getLogger("app").info("Database tables created/verified successfully.")
     except Exception as e:
