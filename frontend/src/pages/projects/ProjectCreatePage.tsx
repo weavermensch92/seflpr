@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, ArrowLeft, Building2, HelpCircle, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,7 @@ import { projectsApi } from "@/api/projects";
 
 export default function ProjectCreatePage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -58,6 +60,7 @@ export default function ProjectCreatePage() {
         title: formData.title || `${formData.company_name} - ${formData.position}`,
       };
       const result = await projectsApi.create(payload);
+      qc.invalidateQueries({ queryKey: ["projects"] });
       navigate(`/projects/${result.id}`);
     } catch (err) {
       console.error(err);
