@@ -67,7 +67,7 @@ export default function DashboardPage() {
               <div>
                 <h2 className="font-semibold">새 자소서 프로젝트</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  기업과 포지션을 선택하고 AI 자소서를 생성하세요. (30P)
+                  기업과 포지션을 선택하고 AI 자소서를 생성하세요. (50P)
                 </p>
               </div>
             </div>

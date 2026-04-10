@@ -65,7 +65,7 @@ class Settings(BaseSettings):
 
     # Business Rules (포인트 단위, 1P = 100원)
     WELCOME_POINTS: int = 15                # 신규 가입 웰컴 포인트
-    PROJECT_COST_POINTS: int = 30           # 자소서 프로젝트 생성 (30P = 3,000원)
+    PROJECT_COST_POINTS: int = 50           # 자소서 프로젝트 생성 (50P = 5,000원)
     INTERVIEW_SESSION_COST_POINTS: int = 60 # 면접 세션 시작 (60P = 6,000원)
     INTERVIEW_NEW_QUESTION_POINTS: int = 3  # 면접 신규 질문 (3P = 300원)
     INTERVIEW_FOLLOW_UP_POINTS: int = 1     # 면접 꼬리 질문 (1P = 100원)
